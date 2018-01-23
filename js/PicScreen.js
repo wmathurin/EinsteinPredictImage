@@ -27,18 +27,24 @@
 import React from 'react';
 import {
     Alert,
-    ScrollView,
-    RefreshControl,
-    StyleSheet,
-    View,
-    Text,
+    Button,
+    FlatList,
     Image,
+    Picker,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
     TouchableHighlight,
+    View,
 } from 'react-native';
 
 import { net } from 'react-native-force';
 import { showImagePicker } from 'react-native-image-picker';
+// import LabelledBar from './LabelledBar';
+
 var createReactClass = require('create-react-class');
+
 
 const pickPhoto = (callback) => {
     const options = {
@@ -57,7 +63,7 @@ const pickPhoto = (callback) => {
         }
     };
 
-    console.log("Showing image picker");
+    console.log("Showing image picker" + showImagePicker);
     
     showImagePicker(options, (response) => {
         console.log('Response = ' +  response);
@@ -77,14 +83,16 @@ const pickPhoto = (callback) => {
     });
 };
 
-const UserPicScreen = createReactClass({
+const PicScreen = createReactClass({
     navigationOptions: {
-        title: 'User Photo Picker'
+        title: 'Photo Analyzer'
     },
 
     getInitialState() {
         return {
-          refreshing: false
+            refreshing: false,
+            classifier: 'GeneralImageClassifier',
+            probabilities: []
         };
     },
 
@@ -138,8 +146,20 @@ const UserPicScreen = createReactClass({
         });
     },
 
+    analyzePhoto(callback) {
+        net.sendRequest('/services/apexrest', '/einstein', 
+            (response) => {
+                callback(response);
+            },
+            (error) => {
+                console.log('Failed to analyze photo:' + error);
+            }, 
+            'GET', 
+            {'model': this.state.classifier, 'imgurl':this.state.photoUrl}, 
+        );
+    },
+
     onChangePic() {
-        console.log("Here");
         pickPhoto((response) => {
             this.uploadPhoto(response.uri, (response) => {
                 this.setState({
@@ -147,6 +167,12 @@ const UserPicScreen = createReactClass({
                     photoVersionId: response.photoVersionId
                 });
             });
+        });
+    },
+
+    onAnalyzePic() {
+        this.analyzePhoto((probabilities) => {
+            this.setState({probabilities: probabilities});
         });
     },
 
@@ -161,13 +187,27 @@ const UserPicScreen = createReactClass({
                     />
                 }
             >
-            <View style={styles.content}>
                 { this.state.photoUrl?<Image style={styles.photo} source={{uri: this.state.photoUrl}} />
                     :<Text>Loading</Text> }
-                <TouchableHighlight onPress={this.onChangePic}>
-                  <Text>Change</Text>
-                </TouchableHighlight>
-            </View>
+
+                <Button onPress={this.onChangePic} title="Upload"/>
+
+                <Picker
+                 style={styles.picker}
+                 selectedValue={this.state.classifier}
+                 onValueChange={(itemValue, itemIndex) => this.setState({classifier: itemValue})}>
+                  <Picker.Item label="General" value="GeneralImageClassifier" />
+                  <Picker.Item label="Food" value="FoodImageClassifier" />
+                  <Picker.Item label="Multi label" value="MultiLabelImageClassifier" />
+                  <Picker.Item label="Scene" value="SceneClassifier" />
+                </Picker>
+
+                <Button onPress={this.onAnalyzePic} title="Analyze"/>
+
+                <FlatList 
+                  data={this.state.probabilities}
+                  renderItem={ ({item}) => <Text>{item.label}: {item.probability}</Text> } />
+
             </ScrollView>
             </View>
         );
@@ -180,19 +220,21 @@ const styles = StyleSheet.create({
         paddingTop:100
     },
     content: {
+        backgroundColor: 'red',
         flex: 1,
         flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center'
     },
     scroll: {
         flex: 1,
         flexDirection: 'column',
     },
     photo: {
-        height:200,
-        width:200,
+        height:300,
+        width:300,
     },
+    picker: {
+        backgroundColor: 'green'
+    }
 });
 
-export default UserPicScreen;
+export default PicScreen;

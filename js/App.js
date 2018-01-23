@@ -27,10 +27,10 @@
 import React from 'react';
 
 import { StackNavigator } from 'react-navigation';
-import UserPicScreen from './UserPic';
+import PicScreen from './PicScreen';
 import {oauth, net} from 'react-native-force';
 
 export const App = StackNavigator({
-    UserPic: { screen: UserPicScreen }
+    Pic: { screen: PicScreen }
 });
 
