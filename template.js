@@ -42,9 +42,9 @@ function prepare(config, replaceInFiles, moveFile, removeFile) {
         var path = require('path');
 
         // Values in template
-        var templateAppName = 'ReactNativeTemplate';
-        var templatePackageName = 'com.salesforce.reactnativetemplate';
-        var templateOrganization = 'ReactNativeTemplateOrganizationName';
+        var templateAppName = 'EinsteinPredictImage';
+        var templatePackageName = 'com.salesforce.samples.einsteinpredictimage';
+        var templateOrganization = 'EinsteinPredictImageOrganizationName';
 
         // Key files
         var templatePackageJsonFile = 'package.json';
@@ -103,8 +103,8 @@ function prepare(config, replaceInFiles, moveFile, removeFile) {
         var path = require('path');
 
         // Values in template
-        var templateAppName = 'ReactNativeTemplate';
-        var templatePackageName = 'com.salesforce.reactnativetemplate';
+        var templateAppName = 'EinsteinPredictImage';
+        var templatePackageName = 'com.salesforce.samples.einsteinpredictimage';
 
         // Key files
         var templatePackageJsonFile = 'package.json';
@@ -115,8 +115,8 @@ function prepare(config, replaceInFiles, moveFile, removeFile) {
         var templateAppBuildGradleFile = path.join('android', 'app', 'build.gradle');
         var templateStringsXmlFile = path.join('android', 'app', 'src', 'main', 'res', 'values', 'strings.xml');
         var templateBootconfigFile = path.join('android', 'app', 'src', 'main', 'res', 'values', 'bootconfig.xml');
-        var templateMainActivityFile = path.join('android', 'app', 'src', 'main', 'java', 'com', 'salesforce', 'reactnativetemplate', 'MainActivity.java');
-        var templateMainApplicationFile = path.join('android', 'app', 'src', 'main', 'java', 'com', 'salesforce', 'reactnativetemplate', 'MainApplication.java');
+        var templateMainActivityFile = path.join('android', 'app', 'src', 'main', 'java', 'com', 'salesforce', 'samples', 'einsteinpredictimage', 'MainActivity.java');
+        var templateMainApplicationFile = path.join('android', 'app', 'src', 'main', 'java', 'com', 'salesforce', 'samples', 'einsteinpredictimage', 'MainApplication.java');
 
         //
         // Replace in files
