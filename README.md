@@ -42,14 +42,16 @@ global with sharing class EinsteinResource {
 }
 ```
 
-## Installation
+## Installation/Running on iOS
 ``` shell
-./installios.js
-./installandroid.js
+./installios.js # first time only
 npm start
+open ios/EinsteinPredictImage.xcworkspace
 ```
-## To run the application on iOS
-* Start Xcode, open ios/EinsteinPredictImage.xcworkspace
 
-## To run the application on Android
-* Start Android Studio, open android
+## Installation/Running on android
+``` shell
+./installandroid.js # first time only
+npm start
+# open android folder in Android Studio
+```
