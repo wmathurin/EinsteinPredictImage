@@ -26,25 +26,23 @@
 
 import React from 'react';
 import {
-    Alert,
+    ActivityIndicator,
     Button,
     FlatList,
     Image,
-    Picker,
-    RefreshControl,
-    ScrollView,
     StyleSheet,
     Text,
-    TouchableHighlight,
     View,
 } from 'react-native';
 
 import { net } from 'react-native-force';
 import { showImagePicker } from 'react-native-image-picker';
-// import LabelledBar from './LabelledBar';
 
 var createReactClass = require('create-react-class');
 
+const formatProbability = (probability) => {
+    return Math.floor(probability*100) + "%";
+};
 
 const pickPhoto = (callback) => {
     const options = {
@@ -83,6 +81,49 @@ const pickPhoto = (callback) => {
     });
 };
 
+const getUserInfo = (callback) => {
+    net.sendRequest('/services/data', '/v36.0/chatter/users/me', 
+                    (response) => {
+                        callback(response);
+                    },
+                    (error) => {
+                        console.log('Failed to get user info:' + error);
+                    }, 
+                    'GET', 
+                    {}, 
+                    {'X-Connect-Bearer-Urls': 'true'}
+                   );
+};
+
+const uploadPhoto = (localPhotoUrl, userId, callback) => {
+    net.sendRequest('/services/data', '/v36.0/connect/user-profiles/' + userId + '/photo', 
+                    (response) => {
+                        callback(response);
+                    },
+                    (error) => {
+                        console.log('Failed to upload user photo:' + error);
+                    }, 
+                    'POST', 
+                    {}, 
+                    {'X-Connect-Bearer-Urls': 'true'},
+                    {fileUpload: {fileUrl:localPhotoUrl, fileMimeType:'image/jpeg', fileName:'pic.jpg'}}
+                   );
+
+};
+
+const analyzePhoto = (classifier, imgurl, callback) => {
+    net.sendRequest('/services/apexrest', '/einstein', 
+                    (response) => {
+                        callback(response);
+                    },
+                    (error) => {
+                        console.log('Failed to analyze photo:' + error);
+                    }, 
+                    'GET', 
+                    {'model': classifier, 'imgurl':imgurl}, 
+                   );
+};
+
 const PicScreen = createReactClass({
     navigationOptions: {
         title: 'Photo Analyzer'
@@ -90,125 +131,69 @@ const PicScreen = createReactClass({
 
     getInitialState() {
         return {
-            refreshing: false,
+            photoUrl: null,
             classifier: 'GeneralImageClassifier',
             probabilities: []
         };
     },
 
-    onRefresh() {
-        this.refreshUserInfo();
-    },
-
-    getUserInfo(callback) {
-        net.sendRequest('/services/data', '/v36.0/chatter/users/me', 
-            (response) => {
-                callback(response);
-            },
-            (error) => {
-                console.log('Failed to get user info:' + error);
-            }, 
-            'GET', 
-            {}, 
-            {'X-Connect-Bearer-Urls': 'true'}
-        );
-    },
-
-    uploadPhoto(localPhotoUrl, callback) {
-        net.sendRequest('/services/data', '/v36.0/connect/user-profiles/' + this.state.userId + '/photo', 
-            (response) => {
-                callback(response);
-            },
-            (error) => {
-                console.log('Failed to upload user photo:' + error);
-            }, 
-            'POST', 
-            {}, 
-            {'X-Connect-Bearer-Urls': 'true'},
-            {fileUpload: {fileUrl:localPhotoUrl, fileMimeType:'image/jpeg', fileName:'pic.jpg'}}
-       );
-
-    },
-
     componentDidMount() {
-        this.refreshUserInfo();
-    },
-
-    refreshUserInfo() {
-        this.setState({refreshing: true});
-        this.getUserInfo((userInfo) => {
-            this.setState({
-                userId: userInfo.id,
-                photoUrl: userInfo.photo.largePhotoUrl,
-                photoVersionId: userInfo.photo.photoVersionId,
-                refreshing: false
-            });
+        getUserInfo((userInfo) => {
+            analyzePhoto(this.state.classifier, userInfo.photo.largePhotoUrl,
+                         (probabilities) => {
+                             this.setState({
+                                 probabilities: probabilities,
+                                 userId: userInfo.id,
+                                 photoUrl: userInfo.photo.largePhotoUrl,
+                                 photoVersionId: userInfo.photo.photoVersionId
+                             });
+                         });
         });
-    },
-
-    analyzePhoto(callback) {
-        net.sendRequest('/services/apexrest', '/einstein', 
-            (response) => {
-                callback(response);
-            },
-            (error) => {
-                console.log('Failed to analyze photo:' + error);
-            }, 
-            'GET', 
-            {'model': this.state.classifier, 'imgurl':this.state.photoUrl}, 
-        );
     },
 
     onChangePic() {
         pickPhoto((response) => {
-            this.uploadPhoto(response.uri, (response) => {
-                this.setState({
-                    photoUrl: response.largePhotoUrl,
-                    photoVersionId: response.photoVersionId
-                });
+            uploadPhoto(response.uri, this.state.userId, (response) => {
+                analyzePhoto(this.state.classifier, response.largePhotoUrl,
+                             (probabilities) => {
+                                 this.setState({
+                                     probabilities: probabilities,
+                                     photoUrl: response.largePhotoUrl,
+                                     photoVersionId: response.photoVersionId,
+                                 });
+                             });
             });
         });
     },
 
-    onAnalyzePic() {
-        this.analyzePhoto((probabilities) => {
-            this.setState({probabilities: probabilities});
-        });
+    onChangeClassifier(classifier) {
+        analyzePhoto(classifier, this.state.photoUrl,
+                     (probabilities) => {
+                         this.setState({
+                             classifier: classifier,
+                             probabilities: probabilities
+                         });
+                     });
     },
 
     render() {
         return (
             <View style={styles.container}>
-            <ScrollView style={styles.scroll}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={this.state.refreshing}
-                        onRefresh={this.onRefresh}
-                    />
-                }
-            >
-                { this.state.photoUrl?<Image style={styles.photo} source={{uri: this.state.photoUrl}} />
-                    :<Text>Loading</Text> }
+                { this.state.photoUrl ? <Image style={styles.photo} source={{uri: this.state.photoUrl}} /> : <ActivityIndicator size="large" color="#0000ff" /> }
 
-                <Button onPress={this.onChangePic} title="Upload"/>
+                <Button onPress={this.onChangePic} title="Change"/>
+                <View style={styles.row}>
+                  <Button onPress={() => {this.onChangeClassifier("GeneralImageClassifier")}} title="General"/>
+                  <Button onPress={() => {this.onChangeClassifier("FoodImageClassifier")}} title="Food"/>
+                  <Button onPress={() => {this.onChangeClassifier("MultiLabelImageClassifier")}} title="Multi Label"/>
+                  <Button onPress={() => {this.onChangeClassifier("SceneClassifier")}} title="Scene"/>
+                </View>
 
-                <Picker
-                 style={styles.picker}
-                 selectedValue={this.state.classifier}
-                 onValueChange={(itemValue, itemIndex) => this.setState({classifier: itemValue})}>
-                  <Picker.Item label="General" value="GeneralImageClassifier" />
-                  <Picker.Item label="Food" value="FoodImageClassifier" />
-                  <Picker.Item label="Multi label" value="MultiLabelImageClassifier" />
-                  <Picker.Item label="Scene" value="SceneClassifier" />
-                </Picker>
-
-                <Button onPress={this.onAnalyzePic} title="Analyze"/>
-
-                <FlatList 
+                <FlatList
+                  style={styles.list}
                   data={this.state.probabilities}
-                  renderItem={ ({item}) => <Text>{item.label}: {item.probability}</Text> } />
+                  renderItem={ ({item}) => <View style={styles.row}><Text>{item.label}</Text><Text>{formatProbability(item.probability)}</Text></View> } />
 
-            </ScrollView>
             </View>
         );
     }
@@ -217,24 +202,17 @@ const PicScreen = createReactClass({
 const styles = StyleSheet.create({
     container:{
         flex: 1,
-        paddingTop:100
-    },
-    content: {
-        backgroundColor: 'red',
-        flex: 1,
         flexDirection: 'column',
+        alignItems: 'center',
     },
-    scroll: {
-        flex: 1,
-        flexDirection: 'column',
+    row: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
     },
     photo: {
-        height:300,
-        width:300,
+        height:350,
+        width:350,
     },
-    picker: {
-        backgroundColor: 'green'
-    }
 });
 
 export default PicScreen;
