@@ -8,21 +8,19 @@ For using the wrapper you'll need to fulfill the following requirements:
 * An API account for Salesforce Einstein Platform. Detailled instructions to the Einstein Platform API [here](https://metamind.readme.io/docs/what-you-need-to-call-api).
 * Deployed Einstein Platform Apex Wrapper. Instructions for the Einstein Platform Apex Wrapper[here](https://github.com/muenzpraeger/salesforce-einstein-platform-apex/blob/master/README.md).
 * Create an apex rest resource with the following code
+
 ```javascript
 @RestResource(urlMapping='/einstein/*')
 global with sharing class EinsteinResource {
     @HttpGet global static List<Map<String, String>> doGet() {
-        Einstein_PredictionService service = null;
-        Einstein_PredictionResult predictionResult = null;
         String imgurl = RestContext.request.params.get('imgurl');
         String model = RestContext.request.params.get('model');
-        
-        if (imgurl != null) {  
-            if (model == null) { model = 'GeneralImageClassifier'; } // other values: FoodImageClassifier, MultiLabelImageClassifier, SceneClassifier
-            
-            service = new Einstein_PredictionService(Einstein_PredictionService.Types.IMAGE);
-            predictionResult = service.predictImageUrl(model, imgurl, 5, '');
-        }
+
+        if (model == null) { model = 'GeneralImageClassifier'; }
+        // other values: FoodImageClassifier, MultiLabelImageClassifier, SceneClassifier
+
+        Einstein_PredictionService service = new Einstein_PredictionService(Einstein_PredictionService.Types.IMAGE);
+        Einstein_PredictionResult predictionResult = service.predictImageUrl(model, imgurl, 5, '');
 
         return convertToList(predictionResult);
     }    
