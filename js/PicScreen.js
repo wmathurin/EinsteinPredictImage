@@ -27,18 +27,27 @@
 import React from 'react';
 import {
     ActivityIndicator,
-    Button,
-    FlatList,
-    Image,
     StyleSheet,
-    Text,
     View,
 } from 'react-native';
+
+import {
+    Button,
+    ButtonGroup,
+    Header,
+    Slider,
+    Text,
+    Tile
+} from 'react-native-elements';
 
 import { net } from 'react-native-force';
 import { showImagePicker } from 'react-native-image-picker';
 
 var createReactClass = require('create-react-class');
+
+const classifierLabels = ["General", "Food", "Multi Label", "Scene"];
+
+const classifiers = ["GeneralImageClassifier", "FoodImageClassifier", "MultiLabelImageClassifier", "SceneClassifier"];
 
 const formatProbability = (probability) => {
     return Math.floor(probability*100) + "%";
@@ -166,7 +175,8 @@ const PicScreen = createReactClass({
         });
     },
 
-    onChangeClassifier(classifier) {
+    onChangeClassifier(selectedIndex) {
+        var classifier = classifiers[selectedIndex];
         analyzePhoto(classifier, this.state.photoUrl,
                      (probabilities) => {
                          this.setState({
@@ -176,24 +186,56 @@ const PicScreen = createReactClass({
                      });
     },
 
+    renderImage() {
+        if (this.state.photoUrl) {
+            return (
+                    <Tile
+                        featured
+                        imageSrc={{uri: this.state.photoUrl}}
+                        title="Press to change"
+                        onPress={this.onChangePic}
+                    />
+            );
+        }
+        else {
+            return (
+                    <ActivityIndicator size="large" color="#0000ff" />
+            );
+        }
+    },
+
+    renderClassifiers() {
+        var selectedIndex = classifiers.indexOf(this.state.classifier);
+        return (
+                <ButtonGroup
+                    onPress={this.onChangeClassifier}
+                    selectedIndex={selectedIndex}
+                    buttons={classifierLabels}
+                />
+        );
+    },
+
+    renderProbabilities() {
+        var rows = [];
+        for (var i=0; i<Math.min(5, this.state.probabilities.length); i++) {
+            var item = this.state.probabilities[i];
+            rows.push(
+                    <View style={styles.probability} key={item.label}>
+                  <Slider disabled value={parseFloat(item.probability)} maximumValue={1} minimumValue={0} />
+                  <Text>{item.label}: {formatProbability(item.probability)}</Text>
+                </View>
+            );
+        }
+        return <View style={styles.probabilities}>{rows}</View>;
+    },
+
     render() {
         return (
             <View style={styles.container}>
-                { this.state.photoUrl ? <Image style={styles.photo} source={{uri: this.state.photoUrl}} /> : <ActivityIndicator size="large" color="#0000ff" /> }
-
-                <Button onPress={this.onChangePic} title="Change"/>
-                <View style={styles.row}>
-                  <Button onPress={() => {this.onChangeClassifier("GeneralImageClassifier")}} title="General"/>
-                  <Button onPress={() => {this.onChangeClassifier("FoodImageClassifier")}} title="Food"/>
-                  <Button onPress={() => {this.onChangeClassifier("MultiLabelImageClassifier")}} title="Multi Label"/>
-                  <Button onPress={() => {this.onChangeClassifier("SceneClassifier")}} title="Scene"/>
-                </View>
-
-                <FlatList
-                  style={styles.list}
-                  data={this.state.probabilities}
-                  renderItem={ ({item}) => <View style={styles.row}><Text>{item.label}</Text><Text>{formatProbability(item.probability)}</Text></View> } />
-
+                <Header><View/><Text h4 style={styles.title}>Analyze Photo</Text><View/></Header>
+                {this.renderImage()}
+                {this.renderClassifiers()}
+                {this.renderProbabilities()}
             </View>
         );
     }
@@ -203,16 +245,20 @@ const styles = StyleSheet.create({
     container:{
         flex: 1,
         flexDirection: 'column',
-        alignItems: 'center',
     },
-    row: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
+    title: {
+        color: '#fff'
     },
-    photo: {
-        height:350,
-        width:350,
+    probabilities: {
+        flex:1,
+        flexDirection: 'column',
+        padding: 5
     },
+    probability: {
+        flex:1,
+        alignItems: 'stretch',
+        justifyContent: 'center'
+    }
 });
 
 export default PicScreen;

@@ -25,7 +25,6 @@
  */
 
 import { AppRegistry } from 'react-native';
-import { App } from './js/App.js';
+import PicScreen from './js/PicScreen.js';
 
-
-AppRegistry.registerComponent('EinsteinPredictImage', () => App);
+AppRegistry.registerComponent('EinsteinPredictImage', () => PicScreen);
