@@ -1,6 +1,8 @@
 # EinsteinPredictImage
 Simple application showcasing how to use the [Salesforce Einstein Platform API](https://metamind.readme.io/) in a Mobile SDK application.
 
+![GitHub Logo](/iOS_Screenshot.png)
+
 ## Prerequisites
 
 For using the wrapper you'll need to fulfill the following requirements:
